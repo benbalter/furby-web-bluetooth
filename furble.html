@@ -206,8 +206,24 @@ function setupDLCButtons(dlcParams) {
 
 async function log2clipboard() {
     try {
-        await navigator.clipboard.writeText(out.textContent);
-        msg.ok('Copied to clipboard');
+        // Try modern Clipboard API first (requires secure context/HTTPS)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(out.textContent);
+            msg.ok('Copied to clipboard');
+        } else {
+            // Fallback for older browsers or non-HTTPS contexts
+            const range = document.createRange();
+            range.selectNode(out);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            const success = document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            if (success) {
+                msg.ok('Copied to clipboard');
+            } else {
+                throw new Error('Copy command failed');
+            }
+        }
     } catch (err) {
         console.error('Failed to copy to clipboard:', err);
         msg.error('Failed to copy');

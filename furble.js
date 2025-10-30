@@ -206,7 +206,7 @@ async function getDLCSlotInfo(slot) {
     props.len = buf.getUint32(9) & 0xffffff;
     if (props.len > 0) {
         let namebuf = new DataView(buf.buffer, 2, 8);
-        let decoder = new TextDecoder();
+        let decoder = new TextDecoder('utf-8');
         props.name = decoder.decode(namebuf);
         props.checksum =  buf.getUint32(13);
         log(`slot ${slot} name: ${props.name}, length: ${props.len} chksum: 0x` + props.checksum.toString(16));
@@ -378,7 +378,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     let initcmd = [0x50, 0x00,
         size >> 16 & 0xff, size >> 8 & 0xff, size & 0xff, 
         2];
-    let encoder = new TextEncoder();
+    let encoder = new TextEncoder('utf-8');
     initcmd = initcmd.concat(Array.from(encoder.encode(filename)));
     initcmd = initcmd.concat([0,0]);
     isTransferring = false;
