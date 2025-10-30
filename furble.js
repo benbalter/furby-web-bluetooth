@@ -644,7 +644,6 @@ async function doConnect() {
     try {
         device = await navigator.bluetooth.requestDevice({
             filters: [
-                { namePrefix: 'Furby', services: [fluff_service] },
                 { namePrefix: 'Furby' }
             ], 
             optionalServices: ['generic_access', 'device_information', fluff_service]});
