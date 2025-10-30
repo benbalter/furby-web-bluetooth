@@ -25,6 +25,9 @@ const SLOT_UPLOADING = 1;
 const SLOT_FILLED = 2;
 const SLOT_ACTIVE = 3;
 
+const INITIAL_RETRY_DELAY_MS = 1000;
+const MAX_RETRY_DELAY_MS = 5000;
+
 function flipDict(d) {
     let flipped = {};
     for (let k in d) {
@@ -551,7 +554,7 @@ async function connectWithRetry(device, maxRetries = 3) {
             lastError = e;
             log(`Connection attempt ${attempt} failed: ${e.message}`);
             if (attempt < maxRetries) {
-                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // exponential backoff, max 5s
+                const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS);
                 log(`Retrying in ${delay}ms...`);
                 await sleep(delay);
             }
