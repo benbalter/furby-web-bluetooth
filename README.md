@@ -41,12 +41,26 @@ The batteries may be low, try replacing them. Furby eats through batteries fairl
 Yes, though it's not straightforward currently. Make sure you read about the [DLC format](https://www.contextis.com/blog/dont-feed-them-after-midnight-reverse-engineering-the-furby-connect) and take a look at the ```demo.py``` script in our [Furby Python tools](https://github.com/ctxis/furby) repo for an example of how to do this. 
 
 ## Troubleshooting tips
-Web Bluetooth in Chrome for Android can be a bit buggy occasionally. If the Furby doesn't show up in the list when you try to connect, try quitting Chrome, then disable and re-enable bluetooth on your phone.
 
-Make sure the batteries in your Furby aren't running low. This can cause the Furby to misbehave in odds ways, including going to sleep unexpectedly.
+### Device Discovery Issues
+If the Furby doesn't show up in the list when you try to connect:
+- Make sure your Furby is turned on and awake (push the antenna or tickle it)
+- Ensure Bluetooth is enabled on your device
+- Try moving your Furby closer to your device
+- Quit Chrome completely and restart it
+- Disable and re-enable Bluetooth on your phone
+- The app now uses improved discovery filters to find Furby devices with various name formats
 
-If your Furby appears to be rejecting connections, try switching it off and on again. Do this by pushing the antenna down for ~5 seconds until the Furby goes to sleep, then waking it up again. Note that attaching the sleep mask seems to put the Furby into standby without actually restarting the CPU.
+### Connection Problems
+The app now includes automatic retry logic with up to 3 connection attempts. If connection still fails:
+- Check that your Furby's batteries aren't low (low batteries cause frequent disconnections)
+- Try switching the Furby off and on: push the antenna down for ~5 seconds until it goes to sleep, then wake it up
+- Note: Attaching the sleep mask puts Furby into standby without restarting the CPU - use the antenna method instead
 
+### Battery and Performance
+Make sure the batteries in your Furby aren't running low. This can cause the Furby to misbehave in odd ways, including going to sleep unexpectedly or rejecting connections.
+
+### Full Reset
 You can fully reset the Furby (and clear the DLC storage area) by following these steps:
 1. Wake Furby up
 2. Hold Furby upside down
