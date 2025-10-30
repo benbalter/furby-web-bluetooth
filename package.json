@@ -1,0 +1,22 @@
+{
+  "name": "furby-web-bluetooth",
+  "version": "1.0.0",
+  "description": "Use Web Bluetooth to control your Furby Connect",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "furby",
+    "bluetooth",
+    "web-bluetooth"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}

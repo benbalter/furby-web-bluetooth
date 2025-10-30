@@ -9,12 +9,17 @@
 .DS_Store
 Thumbs.db
 
-# Node modules (if added in future)
+# Node modules and dependencies
 node_modules/
+package-lock.json
 
 # Build artifacts
 dist/
 build/
+
+# Test coverage
+coverage/
+.nyc_output/
 
 # Logs
 *.log
