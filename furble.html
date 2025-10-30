@@ -155,13 +155,15 @@ function showSection(section) {
     if (currentSection) {
         try {
             document.querySelector('section#' + currentSection).classList.remove('current');
-            document.querySelector(`a[href="#${currentSection}`).classList.remove('current');
+            document.querySelector(`a[href="#${currentSection}"]`).classList.remove('current');
         } catch (e) {}
         
     }
     currentSection = section;
-    document.querySelector('section#' + currentSection).classList.add('current');
-    document.querySelector(`a[href="#${currentSection}`).classList.add('current');
+    const sectionEl = document.querySelector('section#' + currentSection);
+    const linkEl = document.querySelector(`a[href="#${currentSection}"]`);
+    if (sectionEl) sectionEl.classList.add('current');
+    if (linkEl) linkEl.classList.add('current');
 }
 
 async function loadDLCIndex() {
