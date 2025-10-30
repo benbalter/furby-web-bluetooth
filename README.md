@@ -79,7 +79,7 @@ I used the following setup to develop/debug this:
 
 ## Testing
 
-This project includes a comprehensive test suite with 73+ tests covering:
+This project includes a comprehensive test suite covering:
 - Utility functions (buffer operations, checksums, data conversion)
 - State decoding (sensor data, orientation, antenna position)
 - DLC file management and validation
