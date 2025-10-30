@@ -1,6 +1,6 @@
 const fluff_service = 'dab91435-b5a1-e29c-b041-bcd562613bde';
 
-var furby_uuids = {
+const furby_uuids = {
     'GeneralPlusListen': 'dab91382-b5a1-e29c-b041-bcd562613bde',
     'GeneralPlusWrite':  'dab91383-b5a1-e29c-b041-bcd562613bde',
     'NordicListen':      'dab90756-b5a1-e29c-b041-bcd562613bde',
@@ -11,7 +11,7 @@ var furby_uuids = {
     'FileWrite':         'dab90758-b5a1-e29c-b041-bcd562613bde'
 }
 
-var file_transfer_modes = {
+const file_transfer_modes = {
     1: 'EndCurrentTransfer',
     2: 'ReadyToReceive',
     3: 'FileTransferTimeout',
@@ -34,17 +34,17 @@ function flipDict(d) {
     return flipped;
 }
 
-var uuid_lookup = flipDict(furby_uuids);
-var file_transfer_lookup = flipDict(file_transfer_modes);
-var device;
-var isConnected = false;
-var isTransferring = false;
-var furby_chars = {};
-var gp_listen_callbacks = [];
-var nordicListener = null;
-var keepAliveTimer = null;
-var lastCommandSent = 0;
-var NO_RESPONSE = Symbol();
+const uuid_lookup = flipDict(furby_uuids);
+const file_transfer_lookup = flipDict(file_transfer_modes);
+let device;
+let isConnected = false;
+let isTransferring = false;
+const furby_chars = {};
+const gp_listen_callbacks = [];
+let nordicListener = null;
+let keepAliveTimer = null;
+let lastCommandSent = 0;
+const NO_RESPONSE = Symbol();
 
 
 function log() {
@@ -55,7 +55,7 @@ function log() {
         else
             bits.push(''+arg)
     }
-    var s = bits.join(' ')
+    const s = bits.join(' ')
     console.log(s);
     let o = document.getElementById('out');
     o.textContent += s + "\n";
@@ -66,7 +66,7 @@ function sendGPCmd(data, response_prefix) {
     return new Promise((resolve, reject) => {
         if (data.length != 2 && data[0] != 0x20 && data[1] != 0x06)
             log('Sending data to GeneralPlusWrite', buf2hex(data));
-        var hnd;
+        let hnd;
         if (response_prefix != NO_RESPONSE) {
             hnd = addGPListenCallback(response_prefix, buf => {
                 removeGPListenCallback(hnd);
@@ -181,7 +181,7 @@ async function getDLCInfo() {
 
 async function getAllDLCInfo() {
     let allSlotsInfo = await getDLCInfo();
-    var slots = [];
+    const slots = [];
     for (let i=0; i < allSlotsInfo.length; i++) {
         if (allSlotsInfo[i] != SLOT_EMPTY) {
             slots[i] = await getDLCSlotInfo(i);
@@ -202,11 +202,11 @@ async function getActiveSlotInfo() {
 async function getDLCSlotInfo(slot) {
     let buf = await sendGPCmd([0x73, slot], [0x73, slot]);
     //log('Got slot info', buf);
-    var props = {};
+    const props = {};
     props.len = buf.getUint32(9) & 0xffffff;
     if (props.len > 0) {
         let namebuf = new DataView(buf.buffer, 2, 8);
-        let decoder = new TextDecoder('utf-8');
+        let decoder = new TextDecoder();
         props.name = decoder.decode(namebuf);
         props.checksum =  buf.getUint32(13);
         log(`slot ${slot} name: ${props.name}, length: ${props.len} chksum: 0x` + props.checksum.toString(16));
@@ -282,7 +282,7 @@ async function fetchAndUploadDLC(dlcurl) {
     let buf = await response.arrayBuffer();
     let chksumOriginal = adler32(buf);
     log('Fetched DLC from server:', dlcurl, ' checksum 0x' + chksumOriginal.toString(16));
-    var progress = document.getElementById('dlcprogress');
+    const progress = document.getElementById('dlcprogress');
     progress.max = buf.byteLength;
 
     try {
@@ -378,7 +378,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     let initcmd = [0x50, 0x00,
         size >> 16 & 0xff, size >> 8 & 0xff, size & 0xff, 
         2];
-    let encoder = new TextEncoder('utf-8');
+    let encoder = new TextEncoder();
     initcmd = initcmd.concat(Array.from(encoder.encode(filename)));
     initcmd = initcmd.concat([0,0]);
     isTransferring = false;
@@ -505,13 +505,13 @@ function onConnected() {
 }
 
 function buf2hex(dv) {
-    var s = '';
+    let s = '';
     if (DataView.prototype.isPrototypeOf(dv)) {
-        for (var i=0; i < dv.byteLength; i++) {
+        for (let i=0; i < dv.byteLength; i++) {
             s += ('0' + dv.getUint8(i).toString(16)).substr(-2);
         }
     } else if (Array.prototype.isPrototypeOf(dv)) {
-        for (var i=0; i < dv.length; i++) {
+        for (let i=0; i < dv.length; i++) {
             s += ('0' + dv[i].toString(16)).substr(-2);
         }    
     }
@@ -594,7 +594,7 @@ function decodeFurbyState(buf) {
         orientation = 'tilted right'; 
     else if (buf.getUint8(4) & 0x80) 
         orientation = 'tilted left';    
-    var state = {};
+    const state = {};
     state['antenna'] = antenna;
     state['orientation'] = orientation;
 
@@ -615,7 +615,7 @@ function decodeFurbyState(buf) {
 
 async function doConnect() {
     log('Requesting Bluetooth Devices with Furby name...');
-    var server;
+    let server;
     try {
         device = await navigator.bluetooth.requestDevice({
             filters: [{ name: 'Furby'}], 
@@ -638,9 +638,9 @@ async function doConnect() {
     
         // put handles to characteristics into chars object
         for (const characteristic of characteristics) {
-            var uuid = characteristic.uuid;
-            var name = uuid_lookup[uuid];
-            var props = '';
+            const uuid = characteristic.uuid;
+            const name = uuid_lookup[uuid];
+            let props = '';
             for (let k in characteristic.properties) {
                 if (characteristic.properties[k]) props += k + ' ';
             }
