@@ -1,6 +1,6 @@
 const fluff_service = 'dab91435-b5a1-e29c-b041-bcd562613bde';
 
-var furby_uuids = {
+const furby_uuids = {
     'GeneralPlusListen': 'dab91382-b5a1-e29c-b041-bcd562613bde',
     'GeneralPlusWrite':  'dab91383-b5a1-e29c-b041-bcd562613bde',
     'NordicListen':      'dab90756-b5a1-e29c-b041-bcd562613bde',
@@ -11,7 +11,7 @@ var furby_uuids = {
     'FileWrite':         'dab90758-b5a1-e29c-b041-bcd562613bde'
 }
 
-var file_transfer_modes = {
+const file_transfer_modes = {
     1: 'EndCurrentTransfer',
     2: 'ReadyToReceive',
     3: 'FileTransferTimeout',
@@ -37,17 +37,21 @@ function flipDict(d) {
     return flipped;
 }
 
-var uuid_lookup = flipDict(furby_uuids);
-var file_transfer_lookup = flipDict(file_transfer_modes);
-var device;
-var isConnected = false;
-var isTransferring = false;
-var furby_chars = {};
-var gp_listen_callbacks = [];
-var nordicListener = null;
-var keepAliveTimer = null;
-var lastCommandSent = 0;
-var NO_RESPONSE = Symbol();
+const uuid_lookup = flipDict(furby_uuids);
+const file_transfer_lookup = flipDict(file_transfer_modes);
+let device;
+let isConnected = false;
+let isTransferring = false;
+const furby_chars = {};
+const gp_listen_callbacks = [];
+let nordicListener = null;
+let keepAliveTimer = null;
+let lastCommandSent = 0;
+const NO_RESPONSE = Symbol();
+let reconnectAttempts = 0;
+let maxReconnectAttempts = 5;
+let reconnectTimeout = null;
+let userDisconnected = false;
 
 
 function log() {
@@ -58,7 +62,7 @@ function log() {
         else
             bits.push(''+arg)
     }
-    var s = bits.join(' ')
+    const s = bits.join(' ')
     console.log(s);
     let o = document.getElementById('out');
     o.textContent += s + "\n";
@@ -69,7 +73,7 @@ function sendGPCmd(data, response_prefix) {
     return new Promise((resolve, reject) => {
         if (data.length != 2 && data[0] != 0x20 && data[1] != 0x06)
             log('Sending data to GeneralPlusWrite', buf2hex(data));
-        var hnd;
+        let hnd;
         if (response_prefix != NO_RESPONSE) {
             hnd = addGPListenCallback(response_prefix, buf => {
                 removeGPListenCallback(hnd);
@@ -184,7 +188,7 @@ async function getDLCInfo() {
 
 async function getAllDLCInfo() {
     let allSlotsInfo = await getDLCInfo();
-    var slots = [];
+    const slots = [];
     for (let i=0; i < allSlotsInfo.length; i++) {
         if (allSlotsInfo[i] != SLOT_EMPTY) {
             slots[i] = await getDLCSlotInfo(i);
@@ -205,7 +209,7 @@ async function getActiveSlotInfo() {
 async function getDLCSlotInfo(slot) {
     let buf = await sendGPCmd([0x73, slot], [0x73, slot]);
     //log('Got slot info', buf);
-    var props = {};
+    const props = {};
     props.len = buf.getUint32(9) & 0xffffff;
     if (props.len > 0) {
         let namebuf = new DataView(buf.buffer, 2, 8);
@@ -285,7 +289,7 @@ async function fetchAndUploadDLC(dlcurl) {
     let buf = await response.arrayBuffer();
     let chksumOriginal = adler32(buf);
     log('Fetched DLC from server:', dlcurl, ' checksum 0x' + chksumOriginal.toString(16));
-    var progress = document.getElementById('dlcprogress');
+    const progress = document.getElementById('dlcprogress');
     progress.max = buf.byteLength;
 
     try {
@@ -479,7 +483,6 @@ function uploadDLC(dlcbuf, filename, progresscb) {
 
 function onDisconnected(event) {
     log('> Bluetooth Device disconnected');
-    msg.error('Device Disconnected');
     clearInterval(keepAliveTimer);
     isConnected = false;
     document.getElementById('connbtn').textContent = 'Connect';
@@ -489,6 +492,32 @@ function onDisconnected(event) {
     // Log the reason if available (helps with debugging)
     if (event && event.target) {
         log('Disconnect reason: Device ' + event.target.id + ' is no longer available');
+    }
+    
+    // Attempt automatic reconnection if not manually disconnected
+    if (!userDisconnected && device && reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, reconnectAttempts - 1), MAX_RETRY_DELAY_MS);
+        log(`Attempting automatic reconnection (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms...`);
+        msg.error(`Disconnected. Reconnecting in ${Math.round(delay/1000)}s... (${reconnectAttempts}/${maxReconnectAttempts})`);
+        
+        reconnectTimeout = setTimeout(async () => {
+            try {
+                await reconnectDevice();
+            } catch (e) {
+                log('Auto-reconnect failed: ' + e.message);
+                if (reconnectAttempts >= maxReconnectAttempts) {
+                    msg.error('Max reconnection attempts reached. Please click Connect to try again.');
+                    log('Maximum reconnection attempts reached. User intervention required.');
+                }
+            }
+        }, delay);
+    } else {
+        if (userDisconnected) {
+            msg.ok('Disconnected');
+        } else {
+            msg.error('Device Disconnected');
+        }
     }
 }
 
@@ -512,13 +541,13 @@ function onConnected() {
 }
 
 function buf2hex(dv) {
-    var s = '';
+    let s = '';
     if (DataView.prototype.isPrototypeOf(dv)) {
-        for (var i=0; i < dv.byteLength; i++) {
+        for (let i=0; i < dv.byteLength; i++) {
             s += ('0' + dv.getUint8(i).toString(16)).substr(-2);
         }
     } else if (Array.prototype.isPrototypeOf(dv)) {
-        for (var i=0; i < dv.length; i++) {
+        for (let i=0; i < dv.length; i++) {
             s += ('0' + dv[i].toString(16)).substr(-2);
         }    
     }
@@ -531,6 +560,11 @@ function doConnectDisconnect() {
 
 async function doDisconnect() {
     try {
+      userDisconnected = true;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
       log('Disconnecting from GATT Server...');
       device.gatt.disconnect();
     } catch (e) {
@@ -561,6 +595,52 @@ async function connectWithRetry(device, maxRetries = 3) {
         }
     }
     throw lastError;
+}
+
+async function reconnectDevice() {
+    if (!device) {
+        throw new Error('No device to reconnect to');
+    }
+    
+    log('Attempting to reconnect to device...');
+    let server;
+    
+    try {
+        server = await connectWithRetry(device, 2); // Fewer retries for auto-reconnect
+    } catch (e) {
+        throw new Error('Reconnection failed: ' + e.message);
+    }
+    
+    try {
+        log('Re-initializing Furby Service...');
+        const service = await server.getPrimaryService(fluff_service);
+        const characteristics = await service.getCharacteristics();
+        
+        // Re-initialize characteristics
+        for (const characteristic of characteristics) {
+            const uuid = characteristic.uuid;
+            const name = uuid_lookup[uuid];
+            furby_chars[name] = characteristic;
+        }
+        
+        // Re-enable notifications
+        furby_chars.GeneralPlusListen.addEventListener('characteristicvaluechanged', handleGeneralPlusResponse);
+        await furby_chars.GeneralPlusListen.startNotifications();
+        
+        furby_chars.NordicListen.addEventListener('characteristicvaluechanged', handleNordicNotification);
+        await furby_chars.NordicListen.startNotifications();
+        
+        // Reset state
+        gp_listen_callbacks.length = 0;
+        reconnectAttempts = 0; // Reset counter on successful reconnection
+        onConnected();
+        addGPListenCallback([0x21], onFurbySensorData);
+        
+        log('Successfully reconnected!');
+        msg.ok('Reconnected!');
+    } catch (e) {
+        throw new Error('Failed to re-initialize services: ' + e.message);
+    }
 }
 
 async function checkActiveSlot() {
@@ -622,7 +702,7 @@ function decodeFurbyState(buf) {
         orientation = 'tilted right'; 
     else if (buf.getUint8(4) & 0x80) 
         orientation = 'tilted left';    
-    var state = {};
+    const state = {};
     state['antenna'] = antenna;
     state['orientation'] = orientation;
 
@@ -643,7 +723,14 @@ function decodeFurbyState(buf) {
 
 async function doConnect() {
     log('Requesting Bluetooth Devices with Furby name...');
-    var server;
+    userDisconnected = false; // Reset flag when user manually connects
+    reconnectAttempts = 0; // Reset reconnection counter
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    
+    let server;
     try {
         device = await navigator.bluetooth.requestDevice({
             filters: [
@@ -676,9 +763,9 @@ async function doConnect() {
     
         // put handles to characteristics into chars object
         for (const characteristic of characteristics) {
-            var uuid = characteristic.uuid;
-            var name = uuid_lookup[uuid];
-            var props = '';
+            const uuid = characteristic.uuid;
+            const name = uuid_lookup[uuid];
+            let props = '';
             for (let k in characteristic.properties) {
                 if (characteristic.properties[k]) props += k + ' ';
             }

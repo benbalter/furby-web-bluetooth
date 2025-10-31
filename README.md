@@ -71,6 +71,28 @@ You can fully reset the Furby (and clear the DLC storage area) by following thes
 
 ## Development and Debugging
 
+### Testing
+
+This project includes automated tests for utility functions and DOM manipulation.
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+See `__tests__/README.md` for more details about the test suite.
+
+### Local Development
+
 I used the following setup to develop/debug this:
 - Serve the repo from a local HTTP server (e.g. run python3 -m http.server 8000)
 - Use Chrome's [remote debugging](https://developers.google.com/web/tools/chrome-devtools/remote-debugging/) feature to forward port 8000 to your Android phone
