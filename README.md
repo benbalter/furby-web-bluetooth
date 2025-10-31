@@ -77,6 +77,28 @@ I used the following setup to develop/debug this:
 - Load localhost:8000 in Chrome on your phone
 - Use the remote Javascript console in desktop Chrome to debug
 
+## Testing
+
+This project includes a comprehensive test suite covering:
+- Utility functions (buffer operations, checksums, data conversion)
+- State decoding (sensor data, orientation, antenna position)
+- DLC file management and validation
+- Command generation and protocol handling
+- Edge cases and error conditions
+
+To run the tests:
+```bash
+npm install
+npm test
+```
+
+For coverage reports:
+```bash
+npm run test:coverage
+```
+
+See [TEST_README.md](TEST_README.md) for detailed documentation.
+
 ## Thanks
 Thanks to [Jeija](https://github.com/Jeija) for his work documenting the Furby Bluetooth protocol, and to [@L0C4RD](https://twitter.com/L0C4RD) for his help dissecting the DLC format. Also thanks to my work colleagues and to my wife whose patience has been pushed to the limit by noisy, farting Furbies that won't shut the *#$& up while I've been trying to debug my code.
 
