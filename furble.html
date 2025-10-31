@@ -76,6 +76,10 @@
             <select id='dlcname'></select>
             <button onclick='dlcUploadClicked()'>Upload</button>
         </div>
+        <div class='row'>
+            <input type='file' id='customdlc' accept='.dlc'>
+            <button onclick='customDlcUploadClicked()'>Upload Custom</button>
+        </div>
         <progress id='dlcprogress'></progress>
     </section>
 
@@ -191,6 +195,101 @@ async function dlcUploadClicked() {
     await fetchAndUploadDLC('dlc/'+dlcfile);
     setupDLCButtons(params);
     showSection('actions');
+}
+
+async function customDlcUploadClicked() {
+    let fileInput = document.getElementById('customdlc');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        msg.error('Please select a DLC file first');
+        return;
+    }
+    
+    let file = fileInput.files[0];
+    if (!file.name.toLowerCase().endsWith('.dlc')) {
+        msg.error('Please select a valid .dlc file');
+        return;
+    }
+    
+    console.log('Custom DLC upload clicked', file.name);
+    
+    try {
+        let buf = await file.arrayBuffer();
+        let chksumOriginal = adler32(buf);
+        log('Loaded custom DLC:', file.name, ' checksum 0x' + chksumOriginal.toString(16));
+        var progress = document.getElementById('dlcprogress');
+        progress.max = buf.byteLength;
+
+        try {
+            progress.style.display = 'block';
+            progress.removeAttribute('value');
+            let c = 0;
+            await enableEyes(false); // eyes off, save battery
+            await setAntennaColor(0,0,0);
+            
+            // Extract filename without extension and ensure it's 12 chars
+            let filename = file.name.replace(/\.dlc$/i, '').toUpperCase();
+            filename = filename.padStart(12, '_').substring(0, 12);
+            
+            let started = false;
+            await uploadDLC(buf, filename, (current, total, maxRx) => {
+                if (c % 100 == 0) 
+                    progress.value = current;
+                if (c % 500 == 0)
+                    console.log(`transfer: ${current}/${total} maxRx:${maxRx}`);
+                if (!started) {
+                    started = true;
+                    msg.ok('Eyes off while Uploading...');
+                }
+                c++; 
+            });
+            msg.ok('DLC uploaded!');
+        } catch (e) {
+            msg.error('DLC upload failed :(');
+            log(e.message);
+            console.error(e);
+            await setAntennaColor(255,0,0);
+            return;
+        } finally {
+            progress.style.display = 'none';
+            await enableEyes(true); // eyes on
+        }
+
+        try { 
+            let slots = await getDLCInfo();
+            let filledSlot = slots.indexOf(SLOT_FILLED);
+            let activeSlot = slots.indexOf(SLOT_ACTIVE);
+            if (filledSlot == -1)
+                throw new Error('Upload failed - no slots filled');
+            else {
+                log('DLC was uploaded to slot ' + filledSlot);
+            }
+            if (activeSlot != -1) {
+                log('deactivating old DLC in slot ' + activeSlot);
+                await deactivateDLC(activeSlot)
+            }
+            
+            let slotInfo = await getDLCSlotInfo(filledSlot);
+            if (slotInfo.checksum != chksumOriginal) {
+                throw new Error('Expected checksum of 0x' + chksumOriginal.toString(16) + ' but got 0x' + slotInfo.checksum.toString(16));
+            }
+            await loadAndActivateDLC(filledSlot);
+            slots = await getDLCInfo();
+            if (slots.indexOf(SLOT_ACTIVE) != filledSlot)
+                throw new Error('Failed to activate');
+            msg.ok('DLC activated!');
+            await setAntennaColor(0,255,0);
+            showSection('actions');
+        } catch (e) {
+            msg.error('DLC activation failed :(');
+            log(e.message);
+            console.log(e);
+            await setAntennaColor(255,0,0);
+        }
+    } catch (e) {
+        msg.error('Failed to read file');
+        log('Error reading file:', e.message);
+        console.error(e);
+    }
 }
 
 function setupDLCButtons(dlcParams) {
