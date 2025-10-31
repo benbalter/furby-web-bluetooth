@@ -189,6 +189,14 @@ async function loadDLCIndex() {
 }
 
 async function dlcUploadClicked() {
+    if (!dlcsel || dlcsel.options.length === 0) {
+        msg.error('No DLC files available. Please refresh the page.');
+        return;
+    }
+    if (dlcsel.selectedIndex === -1) {
+        msg.error('Please select a DLC file first');
+        return;
+    }
     let dlcfile = dlcsel.options[dlcsel.selectedIndex].value;
     let params = dlcdata[dlcfile];
     console.log('DLC upload clicked', params);
