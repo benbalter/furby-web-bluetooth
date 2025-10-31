@@ -393,6 +393,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     let rxPackets = 0;
     let CHUNK_SIZE = 20;
     let MAX_BUFFERED_PACKETS = 5;  // Reduced from 10 to be more conservative
+    let LOG_THROTTLE_INTERVAL = 50;  // Log every N iterations when paused
     let maxRx = 0;
     let failedWrites = 0;
 
@@ -402,7 +403,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
             if (!isTransferring)
                 return;
             if (rxPackets > MAX_BUFFERED_PACKETS) {
-                if (logCounter++ % 50 == 0) {  // Log every ~50 iterations when paused
+                if (logCounter++ % LOG_THROTTLE_INTERVAL == 0) {
                     log(`rxPackets=${rxPackets}, pausing...`);
                 }
                 setTimeout(transferNextChunk, 100);
