@@ -425,7 +425,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
                     //removeGPListenCallback(hnd)
                     console.log(error);
                     failedWrites++;
-                    if (failedWrites < 3) {
+                    if (failedWrites <= 3) {
                         log(`FileWrite.writeValue failed, retrying (${failedWrites}/3 failures)`);
                         setTimeout(transferNextChunk, 16);
                     } else {
