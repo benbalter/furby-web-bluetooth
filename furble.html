@@ -123,6 +123,17 @@ document.querySelectorAll('input[type=number]').forEach(el => {
     el.addEventListener('blur', el => document.body.classList.remove('keyboard'));
 })
 
+// Toggle aria-expanded for hamburger menu accessibility
+const hamburger = document.getElementById('hamburger');
+if (hamburger) {
+    hamburger.addEventListener('focus', () => {
+        hamburger.setAttribute('aria-expanded', 'true');
+    });
+    hamburger.addEventListener('blur', () => {
+        hamburger.setAttribute('aria-expanded', 'false');
+    });
+}
+
 function showStatus(msg, cls) {
     const el = document.getElementById('status');
     el.className = '';
