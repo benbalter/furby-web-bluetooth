@@ -228,7 +228,7 @@ async function customDlcUploadClicked() {
             
             // Extract filename without extension and ensure it's 12 chars
             let filename = file.name.replace(/\.dlc$/i, '').toUpperCase();
-            filename = filename.padStart(12, '_').substring(0, 12);
+            filename = filename.padEnd(12, '_').substring(0, 12);
             
             let started = false;
             await uploadDLC(buf, filename, (current, total, maxRx) => {
@@ -278,7 +278,6 @@ async function customDlcUploadClicked() {
                 throw new Error('Failed to activate');
             msg.ok('DLC activated!');
             await setAntennaColor(0,255,0);
-            showSection('actions');
         } catch (e) {
             msg.error('DLC activation failed :(');
             log(e.message);
