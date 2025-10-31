@@ -397,11 +397,12 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     let failedWrites = 0;
 
     return new Promise((resolve, reject) => {
+        let logCounter = 0;
         let transferNextChunk = () => {
             if (!isTransferring)
                 return;
             if (rxPackets > MAX_BUFFERED_PACKETS) {
-                if (sendPos % 1000 == 0) {
+                if (logCounter++ % 50 == 0) {  // Log every ~50 iterations when paused
                     log(`rxPackets=${rxPackets}, pausing...`);
                 }
                 setTimeout(transferNextChunk, 100);
@@ -424,7 +425,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
                     //removeGPListenCallback(hnd)
                     console.log(error);
                     failedWrites++;
-                    if (failedWrites < 3) {
+                    if (failedWrites <= 3) {
                         log('FileWrite.writeValue failed, will retry (attempt ' + failedWrites + '/3)');
                         setTimeout(transferNextChunk, 16);
                     } else {
