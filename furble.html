@@ -172,19 +172,29 @@ function showSection(section) {
 }
 
 async function loadDLCIndex() {
-    let resp = await fetch('dlc/index.js');
-    let data = await resp.json();
-
-    for (let dlc of data) {
-        let opt = document.createElement('option');
-        if (dlc.file.length > 12) {
-            log('DLC filename must be <= 12 chars, got ' + dlc.file);
+    try {
+        let resp = await fetch('dlc/index.js');
+        if (!resp.ok) {
+            throw new Error(`Failed to load DLC index: ${resp.status} ${resp.statusText}`);
         }
-            
-        dlcdata[dlc.file] = dlc;
-        opt.value = dlc.file;
-        opt.textContent = dlc.title;
-        dlcsel.appendChild(opt);
+        let data = await resp.json();
+
+        for (let dlc of data) {
+            let opt = document.createElement('option');
+            if (dlc.file.length > 12) {
+                log('DLC filename must be <= 12 chars, got ' + dlc.file);
+            }
+                
+            dlcdata[dlc.file] = dlc;
+            opt.value = dlc.file;
+            opt.textContent = dlc.title;
+            dlcsel.appendChild(opt);
+        }
+        log(`Loaded ${data.length} DLC files`);
+    } catch (e) {
+        log('Error loading DLC index: ' + e.message);
+        console.error('Failed to load DLC index:', e);
+        msg.error('Failed to load DLC list. Please refresh the page.');
     }
 }
 
