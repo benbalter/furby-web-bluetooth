@@ -426,7 +426,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
                     console.log(error);
                     failedWrites++;
                     if (failedWrites <= 3) {
-                        log(`FileWrite.writeValue failed, retrying (${failedWrites}/3 failures)`);
+                        log(`FileWrite.writeValue failed (failure ${failedWrites}), retrying...`);
                         setTimeout(transferNextChunk, 16);
                     } else {
                         log(`FileWrite.writeValue failed, giving up after ${failedWrites} failures`);
