@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { describe, test, expect, beforeEach } = require('@jest/globals');
+const { describe, test, expect } = require('@jest/globals');
 
 // Import functions by evaluating the source code
 // Since furble.js uses global scope, we'll need to mock the DOM and test individual functions
