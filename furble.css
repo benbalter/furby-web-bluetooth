@@ -4,7 +4,7 @@
     --bg-primary: rgb(243, 0, 170);
 }
 
-body { font-family: sans-serif; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 #sensors li { font-size: 20pt; }
 button, input, select { font-size: 14pt; }
 input[type=number] { font-size: 20pt; }
