@@ -1,112 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset='utf-8' />
-    <title>Furby Web Bluetooth</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' href='furble.css'>
+    <meta charset="utf-8">
+    <title>FurBLE - Furby Web Bluetooth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Control your Furby Connect via Web Bluetooth">
+    <link rel="stylesheet" href="furble.css">
 </head>
 <body>
 
 <!-- for slide-in status messages -->
-<div id='status' class='ok'>Connected!</div>
+<div id="status" class="ok" role="status" aria-live="polite">Connected!</div>
 
 <!-- menu button and menu -->
-<button id='hamburger'>☰</button>
-<div id='menu'>
+<button id="hamburger" aria-label="Menu" aria-expanded="false">☰</button>
+<nav id="menu" aria-label="Main navigation">
     <h2>FurBLE</h2>
     <ul>
-        <li><a href='#actions'>Actions</a></li>
-        <li><a href='#misc'>Misc</a></li>
-        <li><a href='#dlc'>DLC Upload</a></li>
-        <li><a href='#sensors'>Sensors</a></li>
-        <li><a href='#debug'>Debug</a></li>
+        <li><a href="#actions">Actions</a></li>
+        <li><a href="#misc">Misc</a></li>
+        <li><a href="#dlc">DLC Upload</a></li>
+        <li><a href="#sensors">Sensors</a></li>
+        <li><a href="#debug">Debug</a></li>
     </ul>
-</div>
+</nav>
 
+<header class="header">
+    <button id="connbtn" onclick="doConnectDisconnect()">Connect</button>
+    <div>
+        <h1>FurBLE</h1>
+        <span id="state">Not connected</span>
+    </div>
+</header>
 
-<div class='header'>
-        <button id='connbtn' onclick='doConnectDisconnect()'>Connect</button>
-    <div><h1>FurBLE</h1>
-    <span id='state'>Not connected</span></div>
-    
-</div>
+<main id="furby-buttons">
 
-<div id='furby-buttons'>
-
-    <section id='misc'>
+    <section id="misc">
         <h2>Antenna Colour</h2>
-        <div class='row'>
-            <button onclick='setAntennaColor(255, 0,0)'>Red</button>
-            <button onclick='setAntennaColor(0, 255,0)'>Green</button>
-            <button onclick='setAntennaColor(0, 0, 255)'>Blue</button>
-            <button onclick='setAntennaColor(255, 255, 255)'>White</button>
+        <div class="row">
+            <button onclick="setAntennaColor(255, 0,0)">Red</button>
+            <button onclick="setAntennaColor(0, 255,0)">Green</button>
+            <button onclick="setAntennaColor(0, 0, 255)">Blue</button>
+            <button onclick="setAntennaColor(255, 255, 255)">White</button>
         </div>
     </section>
 
-    <section id='actions'>
+    <section id="actions">
         <h2>Action Sequences</h2>
-        <div class='row' id='dlc-actions'></div>
-        <div class='row'>
-            <button onclick='triggerAction(39,3,8,1)'>Legendary!</button>
-            <button onclick='triggerAction(39,4,6,1)'>Nice</button>
-            <button onclick='triggerAction(39,3,1,1)'>Hey, hey</button>
+        <div class="row" id="dlc-actions"></div>
+        <div class="row">
+            <button onclick="triggerAction(39,3,8,1)">Legendary!</button>
+            <button onclick="triggerAction(39,4,6,1)">Nice</button>
+            <button onclick="triggerAction(39,3,1,1)">Hey, hey</button>
         </div>
-        <div class='row'>
-            <input type='number' min='0' max='75' name='furby-action' value='39'>
-            <input type='number' min='0' max='4' name='furby-action' value='0'>
-            <input type='number' min='0' max='30' name='furby-action' value='0'>
-            <input type='number' min='0' max='10' name='furby-action' value='0'>
-            <button onclick='customAction()'>Send</button>
+        <div class="row">
+            <input type="number" min="0" max="75" name="furby-action" value="39" aria-label="Action input">
+            <input type="number" min="0" max="4" name="furby-action" value="0" aria-label="Action index">
+            <input type="number" min="0" max="30" name="furby-action" value="0" aria-label="Action subindex">
+            <input type="number" min="0" max="10" name="furby-action" value="0" aria-label="Action specific">
+            <button onclick="customAction()">Send</button>
         </div>
     </section>
 
-    <section id='debug'>
+    <section id="debug">
         <h2>Debug</h2>
-        <div class='row'>
-            <button onclick='cycleDebug()'>Eye Debug</button>
-            <button onclick='enableEyes(false)'>Eyes off</button>
-            <button onclick='enableEyes(true)'>Eyes on</button>
+        <div class="row">
+            <button onclick="cycleDebug()">Eye Debug</button>
+            <button onclick="enableEyes(false)">Eyes off</button>
+            <button onclick="enableEyes(true)">Eyes on</button>
         </div>
     </section>
 
-    <section id='dlc'>
+    <section id="dlc">
         <h2>DLC Files</h2>
-        <div class='row'>
-            <select id='dlcname'></select>
-            <button onclick='dlcUploadClicked()'>Upload</button>
+        <div class="row">
+            <label for="dlcname" class="sr-only">Select DLC file</label>
+            <select id="dlcname"></select>
+            <button onclick="dlcUploadClicked()">Upload</button>
         </div>
         <div class='row'>
             <input type='file' id='customdlc' accept='.dlc'>
             <button onclick='customDlcUploadClicked()'>Upload Custom</button>
         </div>
-        <progress id='dlcprogress'></progress>
+        <progress id="dlcprogress" aria-label="Upload progress"></progress>
     </section>
 
-    <section id='sensors'>
+    <section id="sensors">
         <h2>Sensors</h2>
-        <!--<div class='row'>
-                <button onclick='sendGPCmd([0x20, 0x0d])'>Start continuous</button>
-                <button onclick='sendGPCmd([0x20, 0x0e])'>Stop continuous</button>
-        </div>
-        <h2>State</h2>-->
-        <ul id='sensor-state'><li>Waiting for connection...</li></ul>
+        <ul id="sensor-state"><li>Waiting for connection...</li></ul>
     </section>
 
-    <section id='no-web-bluetooth'>
+    <section id="no-web-bluetooth">
         <h3>Sorry, this browser doesn't seem to support Web Bluetooth. Works best with Chrome for Android.</h3>
     </section>
-</div>
+</main>
 
-
-<div id="console">
-    <button onclick='log2clipboard()' class='clip'>Copy to Clipboard</button> <h3 onclick='toggleConsole()'>Log Output</h3>
-<div id="out" style="white-space:pre"></div>
-</div>
+<aside id="console" role="complementary" aria-label="Console log">
+    <button onclick="log2clipboard()" class="clip">Copy to Clipboard</button> 
+    <h3 onclick="toggleConsole()">Log Output</h3>
+    <div id="out"></div>
+</aside>
 
 <script>
-var dlcsel = document.getElementById('dlcname');
-var s = document.createElement('script');
+const dlcsel = document.getElementById('dlcname');
+const s = document.createElement('script');
 s.src = 'furble.js?' + Math.random();
 document.body.appendChild(s);
 s.onload = () => {
@@ -116,7 +113,7 @@ s.onload = () => {
     loadDLCIndex();
 }
     
-var out = document.getElementById('out');
+const out = document.getElementById('out');
 out.addEventListener('transitionend', e => out.scrollTop=out.scrollHeight);
 function toggleConsole() {
     document.getElementById('console').classList.toggle('expanded');
@@ -130,8 +127,19 @@ document.querySelectorAll('input[type=number]').forEach(el => {
     el.addEventListener('blur', el => document.body.classList.remove('keyboard'));
 })
 
+// Toggle aria-expanded for hamburger menu accessibility
+const hamburger = document.getElementById('hamburger');
+if (hamburger) {
+    hamburger.addEventListener('focus', () => {
+        hamburger.setAttribute('aria-expanded', 'true');
+    });
+    hamburger.addEventListener('blur', () => {
+        hamburger.setAttribute('aria-expanded', 'false');
+    });
+}
+
 function showStatus(msg, cls) {
-    let el = document.getElementById('status');
+    const el = document.getElementById('status');
     el.className = '';
     el.classList.add('on');
     el.classList.add(cls);
@@ -140,7 +148,7 @@ function showStatus(msg, cls) {
     log(cls + ': ' + msg);
 }
 
-var msg = {
+const msg = {
     ok: s => showStatus(s, 'ok'),
     error: s => showStatus(s, 'error'),
 };
@@ -155,20 +163,22 @@ function updateCurrentSection() {
 
 window.onhashchange = updateCurrentSection; 
 let currentSection = '';
-let dlcdata = {};
+const dlcdata = {};
 
 
 function showSection(section) {
     if (currentSection) {
         try {
             document.querySelector('section#' + currentSection).classList.remove('current');
-            document.querySelector(`a[href="#${currentSection}`).classList.remove('current');
+            document.querySelector(`a[href="#${currentSection}"]`).classList.remove('current');
         } catch (e) {}
         
     }
     currentSection = section;
-    document.querySelector('section#' + currentSection).classList.add('current');
-    document.querySelector(`a[href="#${currentSection}`).classList.add('current');
+    const sectionEl = document.querySelector('section#' + currentSection);
+    const linkEl = document.querySelector(`a[href="#${currentSection}"]`);
+    if (sectionEl) sectionEl.classList.add('current');
+    if (linkEl) linkEl.classList.add('current');
 }
 
 async function loadDLCIndex() {
@@ -323,12 +333,30 @@ function setupDLCButtons(dlcParams) {
     });
 }
 
-function log2clipboard() {
-    let range = document.createRange();
-    range.selectNode(out);
-    window.getSelection().addRange(range);
-    document.execCommand('copy');
-    msg.ok('Copied to clipboard');
+async function log2clipboard() {
+    try {
+        // Try modern Clipboard API first (requires secure context/HTTPS)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(out.textContent);
+            msg.ok('Copied to clipboard');
+        } else {
+            // Fallback for older browsers or non-HTTPS contexts
+            const range = document.createRange();
+            range.selectNode(out);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            const success = document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            if (success) {
+                msg.ok('Copied to clipboard');
+            } else {
+                throw new Error('Copy command failed');
+            }
+        }
+    } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
+        msg.error('Failed to copy');
+    }
 }
 
 </script>

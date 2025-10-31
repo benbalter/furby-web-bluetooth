@@ -71,11 +71,55 @@ You can fully reset the Furby (and clear the DLC storage area) by following thes
 
 ## Development and Debugging
 
+### Testing
+
+This project includes automated tests for utility functions and DOM manipulation.
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+See `__tests__/README.md` for more details about the test suite.
+
+### Local Development
+
 I used the following setup to develop/debug this:
 - Serve the repo from a local HTTP server (e.g. run python3 -m http.server 8000)
 - Use Chrome's [remote debugging](https://developers.google.com/web/tools/chrome-devtools/remote-debugging/) feature to forward port 8000 to your Android phone
 - Load localhost:8000 in Chrome on your phone
 - Use the remote Javascript console in desktop Chrome to debug
+
+## Testing
+
+This project includes a comprehensive test suite covering:
+- Utility functions (buffer operations, checksums, data conversion)
+- State decoding (sensor data, orientation, antenna position)
+- DLC file management and validation
+- Command generation and protocol handling
+- Edge cases and error conditions
+
+To run the tests:
+```bash
+npm install
+npm test
+```
+
+For coverage reports:
+```bash
+npm run test:coverage
+```
+
+See [TEST_README.md](TEST_README.md) for detailed documentation.
 
 ## Thanks
 Thanks to [Jeija](https://github.com/Jeija) for his work documenting the Furby Bluetooth protocol, and to [@L0C4RD](https://twitter.com/L0C4RD) for his help dissecting the DLC format. Also thanks to my work colleagues and to my wife whose patience has been pushed to the limit by noisy, farting Furbies that won't shut the *#$& up while I've been trying to debug my code.
