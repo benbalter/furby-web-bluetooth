@@ -265,7 +265,7 @@ async function customDlcUploadClicked() {
             }
             if (activeSlot != -1) {
                 log('deactivating old DLC in slot ' + activeSlot);
-                await deactivateDLC(activeSlot)
+                await deactivateDLC(activeSlot);
             }
             
             let slotInfo = await getDLCSlotInfo(filledSlot);
