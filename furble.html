@@ -282,7 +282,7 @@ async function customDlcUploadClicked() {
         } catch (e) {
             msg.error('DLC activation failed :(');
             log(e.message);
-            console.log(e);
+            console.error(e);
             await setAntennaColor(255,0,0);
         }
     } catch (e) {
