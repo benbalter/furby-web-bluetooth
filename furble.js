@@ -392,7 +392,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     let sendPos = 0;
     let rxPackets = 0;
     let CHUNK_SIZE = 20;
-    let MAX_BUFFERED_PACKETS = 10;
+    let MAX_BUFFERED_PACKETS = 5;  // Reduced from 10 to be more conservative
     let maxRx = 0;
     let failedWrites = 0;
 
@@ -401,7 +401,9 @@ function uploadDLC(dlcbuf, filename, progresscb) {
             if (!isTransferring)
                 return;
             if (rxPackets > MAX_BUFFERED_PACKETS) {
-                log(`rxPackets=${rxPackets}, pausing...`);
+                if (sendPos % 1000 == 0) {
+                    log(`rxPackets=${rxPackets}, pausing...`);
+                }
                 setTimeout(transferNextChunk, 100);
                 return;
             }
@@ -412,15 +414,18 @@ function uploadDLC(dlcbuf, filename, progresscb) {
                     sendPos += chunk.byteLength;
                     if (progresscb)
                         progresscb(sendPos, size, maxRx);
-                    if (sendPos < size)
-                        setTimeout(transferNextChunk, 1);
-                    else 
+                    if (sendPos < size) {
+                        // Small delay between packets to avoid overwhelming the device
+                        setTimeout(transferNextChunk, 5);
+                    } else {
                         log('Sent final packet');
+                    }
                 }).catch(error => {
                     //removeGPListenCallback(hnd)
                     console.log(error);
-                    if (++failedWrites > 3) {
-                        log('FileWrite.writeValue failed, will retry');
+                    failedWrites++;
+                    if (failedWrites < 3) {
+                        log('FileWrite.writeValue failed, will retry (attempt ' + failedWrites + '/3)');
                         setTimeout(transferNextChunk, 16);
                     } else {
                         log('FileWrite.writeValue failed, giving up after too many failures');
