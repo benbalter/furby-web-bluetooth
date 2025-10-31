@@ -48,6 +48,10 @@ let nordicListener = null;
 let keepAliveTimer = null;
 let lastCommandSent = 0;
 const NO_RESPONSE = Symbol();
+let reconnectAttempts = 0;
+let maxReconnectAttempts = 5;
+let reconnectTimeout = null;
+let userDisconnected = false;
 
 
 function log() {
@@ -479,7 +483,6 @@ function uploadDLC(dlcbuf, filename, progresscb) {
 
 function onDisconnected(event) {
     log('> Bluetooth Device disconnected');
-    msg.error('Device Disconnected');
     clearInterval(keepAliveTimer);
     isConnected = false;
     document.getElementById('connbtn').textContent = 'Connect';
@@ -489,6 +492,32 @@ function onDisconnected(event) {
     // Log the reason if available (helps with debugging)
     if (event && event.target) {
         log('Disconnect reason: Device ' + event.target.id + ' is no longer available');
+    }
+    
+    // Attempt automatic reconnection if not manually disconnected
+    if (!userDisconnected && device && reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, reconnectAttempts - 1), MAX_RETRY_DELAY_MS);
+        log(`Attempting automatic reconnection (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms...`);
+        msg.error(`Disconnected. Reconnecting in ${Math.round(delay/1000)}s... (${reconnectAttempts}/${maxReconnectAttempts})`);
+        
+        reconnectTimeout = setTimeout(async () => {
+            try {
+                await reconnectDevice();
+            } catch (e) {
+                log('Auto-reconnect failed: ' + e.message);
+                if (reconnectAttempts >= maxReconnectAttempts) {
+                    msg.error('Max reconnection attempts reached. Please click Connect to try again.');
+                    log('Maximum reconnection attempts reached. User intervention required.');
+                }
+            }
+        }, delay);
+    } else {
+        if (userDisconnected) {
+            msg.ok('Disconnected');
+        } else {
+            msg.error('Device Disconnected');
+        }
     }
 }
 
@@ -531,6 +560,11 @@ function doConnectDisconnect() {
 
 async function doDisconnect() {
     try {
+      userDisconnected = true;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
       log('Disconnecting from GATT Server...');
       device.gatt.disconnect();
     } catch (e) {
@@ -561,6 +595,52 @@ async function connectWithRetry(device, maxRetries = 3) {
         }
     }
     throw lastError;
+}
+
+async function reconnectDevice() {
+    if (!device) {
+        throw new Error('No device to reconnect to');
+    }
+    
+    log('Attempting to reconnect to device...');
+    let server;
+    
+    try {
+        server = await connectWithRetry(device, 2); // Fewer retries for auto-reconnect
+    } catch (e) {
+        throw new Error('Reconnection failed: ' + e.message);
+    }
+    
+    try {
+        log('Re-initializing Furby Service...');
+        const service = await server.getPrimaryService(fluff_service);
+        const characteristics = await service.getCharacteristics();
+        
+        // Re-initialize characteristics
+        for (const characteristic of characteristics) {
+            const uuid = characteristic.uuid;
+            const name = uuid_lookup[uuid];
+            furby_chars[name] = characteristic;
+        }
+        
+        // Re-enable notifications
+        furby_chars.GeneralPlusListen.addEventListener('characteristicvaluechanged', handleGeneralPlusResponse);
+        await furby_chars.GeneralPlusListen.startNotifications();
+        
+        furby_chars.NordicListen.addEventListener('characteristicvaluechanged', handleNordicNotification);
+        await furby_chars.NordicListen.startNotifications();
+        
+        // Reset state
+        gp_listen_callbacks.length = 0;
+        reconnectAttempts = 0; // Reset counter on successful reconnection
+        onConnected();
+        addGPListenCallback([0x21], onFurbySensorData);
+        
+        log('Successfully reconnected!');
+        msg.ok('Reconnected!');
+    } catch (e) {
+        throw new Error('Failed to re-initialize services: ' + e.message);
+    }
 }
 
 async function checkActiveSlot() {
@@ -643,6 +723,13 @@ function decodeFurbyState(buf) {
 
 async function doConnect() {
     log('Requesting Bluetooth Devices with Furby name...');
+    userDisconnected = false; // Reset flag when user manually connects
+    reconnectAttempts = 0; // Reset reconnection counter
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    
     let server;
     try {
         device = await navigator.bluetooth.requestDevice({
