@@ -41,12 +41,26 @@ The batteries may be low, try replacing them. Furby eats through batteries fairl
 Yes, though it's not straightforward currently. Make sure you read about the [DLC format](https://www.contextis.com/blog/dont-feed-them-after-midnight-reverse-engineering-the-furby-connect) and take a look at the ```demo.py``` script in our [Furby Python tools](https://github.com/ctxis/furby) repo for an example of how to do this. 
 
 ## Troubleshooting tips
-Web Bluetooth in Chrome for Android can be a bit buggy occasionally. If the Furby doesn't show up in the list when you try to connect, try quitting Chrome, then disable and re-enable bluetooth on your phone.
 
-Make sure the batteries in your Furby aren't running low. This can cause the Furby to misbehave in odds ways, including going to sleep unexpectedly.
+### Device Discovery Issues
+If the Furby doesn't show up in the list when you try to connect:
+- Make sure your Furby is turned on and awake (push the antenna or tickle it)
+- Ensure Bluetooth is enabled on your device
+- Try moving your Furby closer to your device
+- Quit Chrome completely and restart it
+- Disable and re-enable Bluetooth on your phone
+- The app now uses improved discovery filters to find Furby devices with various name formats
 
-If your Furby appears to be rejecting connections, try switching it off and on again. Do this by pushing the antenna down for ~5 seconds until the Furby goes to sleep, then waking it up again. Note that attaching the sleep mask seems to put the Furby into standby without actually restarting the CPU.
+### Connection Problems
+The app now includes automatic retry logic with up to 3 connection attempts. If connection still fails:
+- Check that your Furby's batteries aren't low (low batteries cause frequent disconnections)
+- Try switching the Furby off and on: push the antenna down for ~5 seconds until it goes to sleep, then wake it up
+- Note: Attaching the sleep mask puts Furby into standby without restarting the CPU - use the antenna method instead
 
+### Battery and Performance
+Make sure the batteries in your Furby aren't running low. This can cause the Furby to misbehave in odd ways, including going to sleep unexpectedly or rejecting connections.
+
+### Full Reset
 You can fully reset the Furby (and clear the DLC storage area) by following these steps:
 1. Wake Furby up
 2. Hold Furby upside down
@@ -84,6 +98,28 @@ I used the following setup to develop/debug this:
 - Use Chrome's [remote debugging](https://developers.google.com/web/tools/chrome-devtools/remote-debugging/) feature to forward port 8000 to your Android phone
 - Load localhost:8000 in Chrome on your phone
 - Use the remote Javascript console in desktop Chrome to debug
+
+## Testing
+
+This project includes a comprehensive test suite covering:
+- Utility functions (buffer operations, checksums, data conversion)
+- State decoding (sensor data, orientation, antenna position)
+- DLC file management and validation
+- Command generation and protocol handling
+- Edge cases and error conditions
+
+To run the tests:
+```bash
+npm install
+npm test
+```
+
+For coverage reports:
+```bash
+npm run test:coverage
+```
+
+See [TEST_README.md](TEST_README.md) for detailed documentation.
 
 ## Thanks
 Thanks to [Jeija](https://github.com/Jeija) for his work documenting the Furby Bluetooth protocol, and to [@L0C4RD](https://twitter.com/L0C4RD) for his help dissecting the DLC format. Also thanks to my work colleagues and to my wife whose patience has been pushed to the limit by noisy, farting Furbies that won't shut the *#$& up while I've been trying to debug my code.

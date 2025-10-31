@@ -25,6 +25,9 @@ const SLOT_UPLOADING = 1;
 const SLOT_FILLED = 2;
 const SLOT_ACTIVE = 3;
 
+const INITIAL_RETRY_DELAY_MS = 1000;
+const MAX_RETRY_DELAY_MS = 5000;
+
 function flipDict(d) {
     let flipped = {};
     for (let k in d) {
@@ -474,7 +477,7 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     });
 }
 
-function onDisconnected() {
+function onDisconnected(event) {
     log('> Bluetooth Device disconnected');
     msg.error('Device Disconnected');
     clearInterval(keepAliveTimer);
@@ -483,6 +486,10 @@ function onDisconnected() {
     document.getElementById('state').textContent = 'Not Connected';
     enableButtons(false);
     
+    // Log the reason if available (helps with debugging)
+    if (event && event.target) {
+        log('Disconnect reason: Device ' + event.target.id + ' is no longer available');
+    }
 }
 
 function enableButtons(enabled) {
@@ -533,6 +540,27 @@ async function doDisconnect() {
 
 function sleep(t) {
     return new Promise(resolve  => setTimeout(resolve, t));
+}
+
+async function connectWithRetry(device, maxRetries = 3) {
+    let lastError;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            log(`Connection attempt ${attempt} of ${maxRetries}...`);
+            const server = await device.gatt.connect();
+            log('Successfully connected to GATT Server');
+            return server;
+        } catch (e) {
+            lastError = e;
+            log(`Connection attempt ${attempt} failed: ${e.message}`);
+            if (attempt < maxRetries) {
+                const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1), MAX_RETRY_DELAY_MS);
+                log(`Retrying in ${delay}ms...`);
+                await sleep(delay);
+            }
+        }
+    }
+    throw lastError;
 }
 
 async function checkActiveSlot() {
@@ -618,14 +646,24 @@ async function doConnect() {
     let server;
     try {
         device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: 'Furby'}], 
+            filters: [
+                { namePrefix: 'Furby' }
+            ], 
             optionalServices: ['generic_access', 'device_information', fluff_service]});
         device.addEventListener('gattserverdisconnected', onDisconnected);
         log('Connecting to GATT Server...');
-        server = await device.gatt.connect();
+        server = await connectWithRetry(device, 3);
     } catch (e) {
-        msg.error('Failed to connect');
-        log(e.message);
+        if (e.name === 'NotFoundError') {
+            msg.error('No Furby device found. Please make sure Furby is turned on and in range.');
+            log('NotFoundError: No Bluetooth device found matching the filters. Make sure your Furby is awake and nearby.');
+        } else if (e.name === 'SecurityError') {
+            msg.error('Bluetooth access denied. Please grant permission.');
+            log('SecurityError: ' + e.message);
+        } else {
+            msg.error('Failed to connect: ' + e.name);
+            log('Connection error: ' + e.message);
+        }
         return;
     }
 
@@ -654,8 +692,18 @@ async function doConnect() {
         furby_chars.NordicListen.addEventListener('characteristicvaluechanged', handleNordicNotification);
         await furby_chars.NordicListen.startNotifications();
     } catch (e) {
-        msg.error('Failed initialise BLE services');
-        log(e.message);
+        msg.error('Failed to initialize BLE services');
+        if (e.name === 'NotFoundError') {
+            log('Service not found. This might not be a Furby Connect device, or the device connection was interrupted.');
+        } else if (e.name === 'NetworkError') {
+            log('Network error while initializing services. The device may have disconnected. Try again.');
+        } else {
+            log('Service initialization error: ' + e.message);
+        }
+        // Disconnect if we fail to initialize services
+        if (device && device.gatt.connected) {
+            device.gatt.disconnect();
+        }
         return;
     }
   
