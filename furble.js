@@ -392,8 +392,14 @@ function uploadDLC(dlcbuf, filename, progresscb) {
     let sendPos = 0;
     let rxPackets = 0;
     let CHUNK_SIZE = 20;
-    let MAX_BUFFERED_PACKETS = 5;  // Reduced from 10 to be more conservative
+    let MAX_BUFFERED_PACKETS = 10;  // Furby only acks while packets arrive; pausing below this stalls the transfer
     let LOG_THROTTLE_INTERVAL = 50;  // Log every N iterations when paused
+    let MAX_PAUSE_MS = 2000;
+    // Writes are fire-and-forget, so sending too fast silently drops packets and the
+    // Furby times out waiting for them. Override with ?packetDelay=<ms>.
+    let PACKET_DELAY_MS = Number(new URLSearchParams(location.search).get('packetDelay')) || 15;
+    let pausedSince = 0;
+    let startedAt = performance.now();
     let maxRx = 0;
     let failedWrites = 0;
 
@@ -403,12 +409,19 @@ function uploadDLC(dlcbuf, filename, progresscb) {
             if (!isTransferring)
                 return;
             if (rxPackets > MAX_BUFFERED_PACKETS) {
-                if (logCounter++ % LOG_THROTTLE_INTERVAL == 0) {
-                    log(`rxPackets=${rxPackets}, pausing...`);
+                pausedSince = pausedSince || performance.now();
+                // The Furby only acks while packets arrive, so don't wait on it forever
+                if (performance.now() - pausedSince < MAX_PAUSE_MS) {
+                    if (logCounter++ % LOG_THROTTLE_INTERVAL == 0) {
+                        log(`rxPackets=${rxPackets}, pausing...`);
+                    }
+                    setTimeout(transferNextChunk, 100);
+                    return;
                 }
-                setTimeout(transferNextChunk, 100);
-                return;
+                log(`rxPackets=${rxPackets} for ${MAX_PAUSE_MS}ms, resuming anyway`);
+                rxPackets = 0;
             }
+            pausedSince = 0;
             let chunk = dlcbuf.slice(sendPos, sendPos + CHUNK_SIZE);
             if (chunk.byteLength > 0) {
                 furby_chars.FileWrite.writeValue(chunk).then(() => {
@@ -417,10 +430,9 @@ function uploadDLC(dlcbuf, filename, progresscb) {
                     if (progresscb)
                         progresscb(sendPos, size, maxRx);
                     if (sendPos < size) {
-                        // Small delay between packets to avoid overwhelming the device
-                        setTimeout(transferNextChunk, 5);
+                        setTimeout(transferNextChunk, PACKET_DELAY_MS);
                     } else {
-                        log('Sent final packet');
+                        log(`Sent final packet: ${sendPos} bytes in ${((performance.now() - startedAt) / 1000).toFixed(1)}s, ${PACKET_DELAY_MS}ms/packet, maxRx=${maxRx}`);
                     }
                 }).catch(error => {
                     //removeGPListenCallback(hnd)

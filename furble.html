@@ -254,9 +254,11 @@ async function customDlcUploadClicked() {
             await enableEyes(false); // eyes off, save battery
             await setAntennaColor(0,0,0);
             
-            // Extract filename without extension and ensure it's 12 chars
-            let filename = file.name.replace(/\.dlc$/i, '').toUpperCase();
-            filename = filename.padEnd(12, '_').substring(0, 12);
+            // Send the same 8.3 name the bundled uploads use (e.g. __HACKED.DLC);
+            // without the .DLC extension the Furby never stored the file
+            let base = file.name.replace(/\.dlc$/i, '').replace(/[^A-Za-z0-9]/g, '').substring(0, 8);
+            let filename = makeDLCFilename(base + '.dlc');
+            log('Uploading as ' + filename);
             
             let started = false;
             await uploadDLC(buf, filename, (current, total, maxRx) => {
